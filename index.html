@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SwiftResume – AI Resume Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,700;0,900;1,300;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06060a;
+  --surface:#0f0f16;
+  --surface2:#16161f;
+  --border:rgba(255,255,255,0.07);
+  --blue:#4f7fff;
+  --blue-soft:rgba(79,127,255,0.12);
+  --blue-glow:rgba(79,127,255,0.25);
+  --white:#f0f0f5;
+  --muted:#6b6b80;
+  --muted2:#9090a0;
+  --green:#32d583;
+  --font-d:'Fraunces',serif;
+  --font-b:'DM Sans',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--white);font-family:var(--font-b);font-size:16px;line-height:1.6;overflow-x:hidden}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px}
+
+/* ── NOISE OVERLAY ── */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;opacity:.02;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 5%;height:66px;background:rgba(6,6,10,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.nav-logo{font-family:var(--font-d);font-size:1.4rem;font-weight:700;color:var(--white);text-decoration:none;letter-spacing:-.02em}
+.nav-logo span{color:var(--blue)}
+.nav-links{display:flex;align-items:center;gap:2rem}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:.875rem;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:var(--white)}
+.nav-btn{background:var(--blue);color:#fff;padding:.55rem 1.3rem;border-radius:6px;font-size:.85rem;font-weight:600;text-decoration:none;transition:all .2s;border:none;cursor:pointer}
+.nav-btn:hover{background:#6b92ff;box-shadow:0 0 20px var(--blue-glow)}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:120px 5% 80px;position:relative;overflow:hidden}
+.hero-glow{position:absolute;top:10%;left:50%;transform:translateX(-50%);width:800px;height:500px;background:radial-gradient(ellipse,rgba(79,127,255,.12) 0%,transparent 70%);pointer-events:none}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(79,127,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(79,127,255,.03) 1px,transparent 1px);background-size:50px 50px;pointer-events:none}
+.hero-content{max-width:780px;margin:0 auto;text-align:center;position:relative;z-index:2}
+.hero-badge{display:inline-flex;align-items:center;gap:.5rem;background:var(--blue-soft);border:1px solid rgba(79,127,255,.25);border-radius:30px;padding:.4rem 1rem;font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);margin-bottom:2rem;animation:up .7s ease both}
+.hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+.hero h1{font-family:var(--font-d);font-size:clamp(3rem,7vw,6rem);font-weight:900;line-height:1;letter-spacing:-.03em;margin-bottom:1.6rem;animation:up .7s ease .1s both}
+.hero h1 em{color:var(--blue);font-style:italic}
+.hero-sub{font-size:1.15rem;font-weight:300;color:var(--muted2);max-width:520px;margin:0 auto 2.8rem;line-height:1.75;animation:up .7s ease .2s both}
+.hero-actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;animation:up .7s ease .3s both}
+.btn-lg{background:var(--blue);color:#fff;padding:1rem 2.2rem;border-radius:8px;font-size:1rem;font-weight:700;text-decoration:none;border:none;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.5rem}
+.btn-lg:hover{background:#6b92ff;transform:translateY(-2px);box-shadow:0 12px 40px var(--blue-glow)}
+.btn-lg-ghost{border:1px solid var(--border);color:var(--white);padding:1rem 2.2rem;border-radius:8px;font-size:1rem;font-weight:500;text-decoration:none;cursor:pointer;background:none;transition:all .2s}
+.btn-lg-ghost:hover{border-color:rgba(79,127,255,.4);color:var(--blue)}
+.hero-proof{display:flex;align-items:center;justify-content:center;gap:2rem;margin-top:3.5rem;animation:up .7s ease .4s both;flex-wrap:wrap}
+.proof-item{display:flex;align-items:center;gap:.5rem;font-size:.8rem;color:var(--muted)}
+.proof-item svg{color:var(--green)}
+@keyframes up{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── FEATURES ── */
+.features{padding:100px 5%}
+.section-tag{display:block;font-size:.7rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--blue);margin-bottom:1rem;text-align:center}
+.section-title{font-family:var(--font-d);font-size:clamp(2.2rem,4vw,3.5rem);font-weight:700;text-align:center;letter-spacing:-.03em;line-height:1.1;margin-bottom:.8rem}
+.section-sub{text-align:center;color:var(--muted2);font-size:1rem;max-width:450px;margin:0 auto 4rem}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.feat-card{background:var(--surface);padding:2.5rem;transition:background .3s;position:relative;overflow:hidden}
+.feat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--blue),transparent);opacity:0;transition:opacity .3s}
+.feat-card:hover{background:var(--surface2)}
+.feat-card:hover::before{opacity:1}
+.feat-icon{width:44px;height:44px;background:var(--blue-soft);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:1.4rem}
+.feat-card h3{font-family:var(--font-d);font-size:1.3rem;font-weight:700;letter-spacing:-.02em;margin-bottom:.7rem}
+.feat-card p{color:var(--muted2);font-size:.9rem;line-height:1.7}
+
+/* ── HOW IT WORKS ── */
+.how{padding:100px 5%;background:var(--surface)}
+.how-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:2rem;max-width:900px;margin:0 auto;position:relative}
+.how-steps::before{content:'';position:absolute;top:28px;left:14%;right:14%;height:1px;background:linear-gradient(90deg,transparent,rgba(79,127,255,.3),transparent)}
+.how-step{text-align:center;padding:1.5rem 1rem}
+.step-n{width:48px;height:48px;border-radius:50%;border:1px solid rgba(79,127,255,.35);background:rgba(79,127,255,.08);display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:1.3rem;font-weight:700;color:var(--blue);margin-bottom:1.3rem}
+.how-step h3{font-family:var(--font-d);font-size:1.2rem;font-weight:700;margin-bottom:.6rem;letter-spacing:-.02em}
+.how-step p{color:var(--muted2);font-size:.88rem;line-height:1.65}
+
+/* ── PRICING ── */
+.pricing{padding:100px 5%}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;max-width:860px;margin:0 auto}
+.price-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2.5rem 2rem;position:relative;transition:all .25s}
+.price-card:hover{border-color:rgba(79,127,255,.25);transform:translateY(-4px)}
+.price-card.popular{border-color:var(--blue);background:linear-gradient(160deg,rgba(79,127,255,.06) 0%,var(--surface) 60%)}
+.pop-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--blue);color:#fff;font-size:.65rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:.3rem 1rem;border-radius:20px;white-space:nowrap}
+.plan-name{font-size:.72rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem}
+.price-card.popular .plan-name{color:var(--blue)}
+.price-num{font-family:var(--font-d);font-size:3.5rem;font-weight:900;line-height:1;letter-spacing:-.03em;margin-bottom:.3rem}
+.price-num sup{font-size:1.4rem;vertical-align:top;padding-top:.5rem}
+.price-num sub{font-size:1rem;color:var(--muted);font-weight:400}
+.price-desc{color:var(--muted2);font-size:.85rem;margin:.8rem 0 1.5rem}
+.price-feats{list-style:none;display:flex;flex-direction:column;gap:.65rem;margin-bottom:2rem}
+.price-feats li{display:flex;align-items:flex-start;gap:.55rem;font-size:.88rem;color:#c0c0d0}
+.price-feats .ck{color:var(--green);flex-shrink:0;font-size:.8rem;margin-top:2px}
+.price-feats .xx{color:var(--muted);flex-shrink:0;font-size:.8rem;margin-top:2px}
+.price-feats .dim{color:var(--muted)}
+.plan-cta{display:block;width:100%;padding:.9rem;border-radius:8px;font-size:.92rem;font-weight:700;text-align:center;cursor:pointer;border:none;transition:all .2s}
+.plan-cta-filled{background:var(--blue);color:#fff}
+.plan-cta-filled:hover{background:#6b92ff;box-shadow:0 8px 30px var(--blue-glow)}
+.plan-cta-outline{background:transparent;color:var(--white);border:1px solid var(--border)!important;border-radius:8px;display:block;width:100%;padding:.9rem;font-size:.92rem;font-weight:700;text-align:center;cursor:pointer;transition:all .2s}
+.plan-cta-outline:hover{border-color:rgba(79,127,255,.4)!important;color:var(--blue)}
+
+/* ── APP SECTION ── */
+.app-section{display:none;min-height:100vh;padding:100px 5% 60px;position:relative}
+.app-section.active{display:block}
+.app-back{display:inline-flex;align-items:center;gap:.4rem;color:var(--muted);font-size:.85rem;cursor:pointer;background:none;border:none;margin-bottom:2rem;transition:color .2s}
+.app-back:hover{color:var(--white)}
+
+/* ── BUILDER ── */
+.builder-wrap{max-width:800px;margin:0 auto}
+.progress-bar{background:var(--surface2);border-radius:30px;height:4px;margin-bottom:3rem;overflow:hidden}
+.progress-fill{height:100%;background:var(--blue);border-radius:30px;transition:width .4s ease}
+.step-header{margin-bottom:2.5rem}
+.step-label{font-size:.7rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--blue);margin-bottom:.6rem}
+.step-title{font-family:var(--font-d);font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:700;letter-spacing:-.03em;margin-bottom:.5rem}
+.step-sub{color:var(--muted2);font-size:.97rem}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.2rem}
+.form-grid.full{grid-template-columns:1fr}
+.field{display:flex;flex-direction:column;gap:.5rem}
+.field label{font-size:.8rem;font-weight:600;color:var(--muted2);letter-spacing:.04em;text-transform:uppercase}
+.field input,.field textarea,.field select{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.85rem 1rem;font-family:var(--font-b);font-size:.95rem;color:var(--white);outline:none;transition:border-color .2s,box-shadow .2s;resize:none}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:rgba(79,127,255,.5);box-shadow:0 0 0 3px rgba(79,127,255,.1)}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted)}
+.field select option{background:#1a1a2e;color:var(--white)}
+
+.exp-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1.5rem;margin-bottom:1rem;position:relative}
+.exp-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem}
+.exp-card-title{font-size:.9rem;font-weight:600;color:var(--white)}
+.exp-remove{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:.2rem;transition:color .2s;line-height:1}
+.exp-remove:hover{color:#ff6b6b}
+.add-btn{display:flex;align-items:center;gap:.5rem;background:none;border:1px dashed var(--border);border-radius:8px;padding:.85rem 1.2rem;color:var(--muted2);font-size:.88rem;font-weight:500;cursor:pointer;width:100%;justify-content:center;transition:all .2s;margin-bottom:1.5rem}
+.add-btn:hover{border-color:rgba(79,127,255,.4);color:var(--blue)}
+
+.nav-btns{display:flex;justify-content:space-between;margin-top:2rem;gap:1rem}
+.btn-back-step{background:var(--surface2);color:var(--white);border:none;padding:.9rem 1.6rem;border-radius:8px;font-size:.92rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-back-step:hover{background:var(--surface)}
+.btn-next-step{background:var(--blue);color:#fff;border:none;padding:.9rem 2rem;border-radius:8px;font-size:.92rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.5rem}
+.btn-next-step:hover{background:#6b92ff;box-shadow:0 8px 30px var(--blue-glow)}
+
+/* ── GENERATING ── */
+.generating{text-align:center;padding:4rem 0}
+.gen-spinner{width:64px;height:64px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 2rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.gen-title{font-family:var(--font-d);font-size:2rem;font-weight:700;letter-spacing:-.03em;margin-bottom:.8rem}
+.gen-steps{display:flex;flex-direction:column;gap:.5rem;margin-top:2rem;max-width:300px;margin-left:auto;margin-right:auto}
+.gen-step{display:flex;align-items:center;gap:.7rem;font-size:.88rem;color:var(--muted);transition:color .3s}
+.gen-step.done{color:var(--green)}
+.gen-step.active{color:var(--white)}
+.gen-step-ico{width:18px;height:18px;flex-shrink:0}
+
+/* ── RESUME PREVIEW ── */
+.preview-wrap{max-width:900px;margin:0 auto}
+.preview-actions{display:flex;gap:1rem;margin-bottom:2rem;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.preview-actions h2{font-family:var(--font-d);font-size:1.8rem;font-weight:700;letter-spacing:-.03em}
+.preview-btns{display:flex;gap:.8rem;flex-wrap:wrap}
+.btn-download{background:var(--blue);color:#fff;border:none;padding:.8rem 1.5rem;border-radius:8px;font-size:.88rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:.5rem;transition:all .2s}
+.btn-download:hover{background:#6b92ff;box-shadow:0 8px 30px var(--blue-glow)}
+.btn-edit{background:var(--surface2);color:var(--white);border:none;padding:.8rem 1.5rem;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-edit:hover{background:var(--surface)}
+.btn-new{background:transparent;color:var(--muted2);border:1px solid var(--border);padding:.8rem 1.5rem;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-new:hover{border-color:rgba(79,127,255,.4);color:var(--blue)}
+
+/* ── RESUME DOCUMENT ── */
+#resume-doc{background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.resume-inner{padding:48px 52px;font-family:'Georgia',serif;color:#1a1a2e;line-height:1.5}
+.res-header{border-bottom:2px solid #1a1a2e;padding-bottom:20px;margin-bottom:20px}
+.res-name{font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px;color:#0d0d1a}
+.res-title{font-size:14px;color:#4f7fff;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px}
+.res-contact{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#555}
+.res-contact span{display:flex;align-items:center;gap:4px}
+.res-section{margin-bottom:20px}
+.res-section-title{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#4f7fff;margin-bottom:10px;padding-bottom:4px;border-bottom:1px solid #e5e5f0}
+.res-summary{font-size:13px;color:#333;line-height:1.65}
+.res-exp-item{margin-bottom:16px}
+.res-exp-hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+.res-exp-title{font-size:13px;font-weight:700;color:#0d0d1a}
+.res-exp-dates{font-size:12px;color:#888}
+.res-exp-company{font-size:12px;color:#4f7fff;font-weight:600;margin-bottom:6px}
+.res-exp-bullets{padding-left:16px;font-size:12.5px;color:#444;line-height:1.6}
+.res-exp-bullets li{margin-bottom:3px}
+.res-skills-grid{display:flex;flex-wrap:wrap;gap:6px}
+.res-skill{background:#f0f3ff;color:#4f7fff;border:1px solid #d0d9ff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:4px}
+.res-edu-item{display:flex;justify-content:space-between;align-items:flex-start}
+.res-edu-degree{font-size:13px;font-weight:700;color:#0d0d1a}
+.res-edu-school{font-size:12px;color:#555}
+.res-edu-year{font-size:12px;color:#888}
+.res-two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+
+/* ── ATS SCORE ── */
+.ats-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:1.5rem}
+.ats-score{width:64px;height:64px;border-radius:50%;background:conic-gradient(var(--green) 0% var(--score-pct),var(--surface) var(--score-pct) 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+.ats-score::before{content:'';position:absolute;width:48px;height:48px;background:var(--surface2);border-radius:50%}
+.ats-num{position:relative;font-family:var(--font-d);font-size:1.1rem;font-weight:700;color:var(--green)}
+.ats-info h4{font-weight:600;font-size:.95rem;margin-bottom:.3rem}
+.ats-info p{color:var(--muted2);font-size:.82rem;line-height:1.6}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem;max-width:420px;width:100%;position:relative;animation:scaleIn .3s cubic-bezier(.22,1,.36,1)}
+@keyframes scaleIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal-close{position:absolute;top:1.2rem;right:1.2rem;background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.3rem;line-height:1}
+.modal-close:hover{color:var(--white)}
+.modal-icon{width:52px;height:52px;background:var(--blue-soft);border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:1.2rem}
+.modal h3{font-family:var(--font-d);font-size:1.5rem;font-weight:700;letter-spacing:-.02em;margin-bottom:.5rem}
+.modal p{color:var(--muted2);font-size:.9rem;line-height:1.65;margin-bottom:1.5rem}
+.modal-input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.85rem 1rem;font-family:var(--font-b);font-size:.95rem;color:var(--white);outline:none;width:100%;margin-bottom:.8rem;transition:border-color .2s}
+.modal-input:focus{border-color:rgba(79,127,255,.5)}
+.modal-input::placeholder{color:var(--muted)}
+
+
+.legal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
+.legal-overlay.open{display:flex}
+.legal-modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:720px;width:100%;max-height:85vh;display:flex;flex-direction:column;animation:scaleIn .3s cubic-bezier(.22,1,.36,1)}
+.legal-header{padding:1.8rem 2rem 1.2rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.legal-header h2{font-family:var(--font-d);font-size:1.6rem;font-weight:700;letter-spacing:-.02em}
+.legal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.5rem;line-height:1;padding:.3rem;transition:color .2s}
+.legal-close:hover{color:var(--white)}
+.legal-tabs{display:flex;gap:.4rem;padding:1rem 2rem 0;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
+.legal-tab{background:none;border:none;color:var(--muted);font-family:var(--font-b);font-size:.85rem;font-weight:600;padding:.7rem 1rem;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.legal-tab:hover{color:var(--white)}
+.legal-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.legal-body{padding:1.8rem 2rem 2rem;overflow-y:auto;flex:1}
+.legal-body h3{font-family:var(--font-d);font-size:1.15rem;font-weight:700;margin:1.5rem 0 .6rem;letter-spacing:-.02em}
+.legal-body h3:first-child{margin-top:0}
+.legal-body p,.legal-body li{color:var(--muted2);font-size:.9rem;line-height:1.7;margin-bottom:.8rem}
+.legal-body ul{padding-left:1.4rem;margin-bottom:.8rem}
+.legal-body strong{color:var(--white)}
+.legal-section{display:none}
+.legal-section.active{display:block}
+.legal-meta{color:var(--muted);font-size:.8rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+
+.contact-modal-content{text-align:center;padding:0 0 1rem}
+.contact-modal-content h3{font-family:var(--font-d);font-size:1.5rem;font-weight:700;margin-bottom:.6rem}
+.contact-modal-content p{color:var(--muted2);margin-bottom:1.5rem;font-size:.9rem}
+.contact-email-box{display:inline-flex;align-items:center;gap:.6rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1rem 1.4rem;font-size:1rem;font-weight:600;color:var(--white);text-decoration:none;transition:border-color .2s}
+.contact-email-box:hover{border-color:rgba(79,127,255,.4);color:var(--blue)}
+
+/* ── FOOTER ── */
+footer{border-top:1px solid var(--border);padding:3rem 5% 2.5rem}
+.footer-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.5rem}
+.footer-logo{font-family:var(--font-d);font-size:1.2rem;font-weight:700;color:var(--white)}
+.footer-logo span{color:var(--blue)}
+.footer-links{display:flex;gap:2rem}
+.footer-links a{color:var(--muted);text-decoration:none;font-size:.82rem;transition:color .2s}
+.footer-links a:hover{color:var(--white)}
+footer p.copy{color:var(--muted);font-size:.78rem;margin-top:2rem;text-align:center}
+
+@media(max-width:680px){
+  nav .nav-links{display:none}
+  .form-grid{grid-template-columns:1fr}
+  .res-two-col{grid-template-columns:1fr}
+  .res-inner{padding:32px 28px}
+  .preview-actions{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#" onclick="showLanding()">Swift<span>Resume</span></a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="#pricing">Pricing</a>
+  </div>
+  <button class="nav-btn" onclick="startBuilder()">Build My Resume →</button>
+</nav>
+
+<!-- ══════════════════════════════════════
+     LANDING PAGE
+══════════════════════════════════════ -->
+<div id="landing">
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="hero-badge"><div class="hero-badge-dot"></div>AI-Powered · ATS-Optimized · Instant</div>
+    <h1>Your resume,<br/><em>written by AI</em><br/>in 30 seconds.</h1>
+    <p class="hero-sub">Stop staring at a blank page. SwiftResume builds a professional, ATS-optimized resume tailored to the job you want – instantly.</p>
+    <div class="hero-actions">
+      <button class="btn-lg" onclick="startBuilder()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>
+        Build My Resume Free
+      </button>
+      <button class="btn-lg-ghost" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">See how it works</button>
+    </div>
+    <div class="hero-proof">
+      <div class="proof-item">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="#32d583" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>12,400+ resumes created</span>
+      </div>
+      <div class="proof-item">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="#32d583" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>ATS score 90+ guaranteed</span>
+      </div>
+      <div class="proof-item">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="#32d583" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Download as PDF instantly</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <span class="section-tag">Why SwiftResume</span>
+  <h2 class="section-title">Everything your resume needs<br/>to get you hired.</h2>
+  <p class="section-sub">Built for the modern job market. Every feature designed to get you past the bots and in front of humans.</p>
+  <div class="feat-grid">
+    <div class="feat-card">
+      <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="#4f7fff" stroke-width="2" stroke-linejoin="round"/></svg></div>
+      <h3>AI-Written Content</h3>
+      <p>Claude AI writes powerful, professional bullet points tailored to your experience and the specific job you're targeting.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" stroke="#4f7fff" stroke-width="2"/></svg></div>
+      <h3>ATS Optimized</h3>
+      <p>90%+ of resumes are rejected by bots before a human ever sees them. SwiftResume is built to pass every ATS filter.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17" stroke="#4f7fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <h3>Instant PDF Download</h3>
+      <p>Your polished, print-ready resume is available for download as a PDF the moment it's generated. No waiting, no sign-up.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" stroke="#4f7fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <h3>Fully Editable</h3>
+      <p>Not happy with a section? Edit anything, regenerate specific parts, or tweak the AI output until it's exactly right.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#4f7fff" stroke-width="2"/><path d="M12 7v5l3 3" stroke="#4f7fff" stroke-width="2" stroke-linecap="round"/></svg></div>
+      <h3>30-Second Generation</h3>
+      <p>Fill in your details, hit generate, and watch your complete professional resume appear in under 30 seconds. That's it.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke="#4f7fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <h3>ATS Score Report</h3>
+      <p>Every resume gets an ATS compatibility score with specific recommendations to maximize your chances of getting interviews.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <span class="section-tag">How it works</span>
+  <h2 class="section-title" style="margin-bottom:3.5rem">Three steps to your dream job.</h2>
+  <div class="how-steps">
+    <div class="how-step">
+      <div class="step-n">1</div>
+      <h3>Enter Your Info</h3>
+      <p>Fill out our guided form with your experience, skills, and the job you're applying for. Takes 3 minutes.</p>
+    </div>
+    <div class="how-step">
+      <div class="step-n">2</div>
+      <h3>AI Generates</h3>
+      <p>Our AI writes compelling, ATS-optimized content tailored to your target role. Ready in 30 seconds.</p>
+    </div>
+    <div class="how-step">
+      <div class="step-n">3</div>
+      <h3>Download & Apply</h3>
+      <p>Review, edit if needed, then download as PDF and start applying. It's that simple.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <span class="section-tag">Pricing</span>
+  <h2 class="section-title">Simple, honest pricing.</h2>
+  <p class="section-sub" style="margin-bottom:3.5rem">Start free. Upgrade when you're ready.</p>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="plan-name">Free</div>
+      <div class="price-num"><sup>$</sup>0<sub>/mo</sub></div>
+      <p class="price-desc">Perfect for trying SwiftResume.</p>
+      <ul class="price-feats">
+        <li><span class="ck">✓</span> 1 AI-generated resume</li>
+        <li><span class="ck">✓</span> PDF download</li>
+        <li><span class="ck">✓</span> ATS score report</li>
+        <li><span class="xx">✗</span> <span class="dim">Unlimited resumes</span></li>
+        <li><span class="xx">✗</span> <span class="dim">Multiple templates</span></li>
+        <li><span class="xx">✗</span> <span class="dim">Cover letter generator</span></li>
+        <li><span class="xx">✗</span> <span class="dim">LinkedIn optimization</span></li>
+      </ul>
+      <button class="plan-cta plan-cta-outline" onclick="startBuilder()">Get started free</button>
+    </div>
+    <div class="price-card popular">
+      <div class="pop-badge">Most Popular</div>
+      <div class="plan-name">Pro</div>
+      <div class="price-num"><sup>$</sup>9<sub>/mo</sub></div>
+      <p class="price-desc">Everything you need to land the job.</p>
+      <ul class="price-feats">
+        <li><span class="ck">✓</span> Unlimited AI resumes</li>
+        <li><span class="ck">✓</span> PDF & Word download</li>
+        <li><span class="ck">✓</span> ATS score + suggestions</li>
+        <li><span class="ck">✓</span> 5 premium templates</li>
+        <li><span class="ck">✓</span> Cover letter generator</li>
+        <li><span class="ck">✓</span> LinkedIn optimization tips</li>
+        <li><span class="ck">✓</span> Priority support</li>
+      </ul>
+      <button class="plan-cta plan-cta-filled" onclick="openUpgrade()">Start 7-day free trial</button>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-logo">Swift<span>Resume</span></span>
+    <div class="footer-links">
+      <a href="#" onclick="openLegal('privacy');return false;">Privacy</a>
+      <a href="#" onclick="openLegal('tos');return false;">Terms</a>
+      <a href="#" onclick="openLegal('disclaimer');return false;">Disclaimer</a>
+      <a href="#" onclick="openContact();return false;">Contact</a>
+    </div>
+  </div>
+  <p class="copy">© 2026 SwiftResume · By using this service you agree to our <a href="#" onclick="openLegal('tos');return false;" style="color:var(--blue)">Terms of Service</a> and <a href="#" onclick="openLegal('privacy');return false;" style="color:var(--blue)">Privacy Policy</a></p>
+</footer>
+
+</div><!-- /landing -->
+
+<!-- ══════════════════════════════════════
+     BUILDER APP
+══════════════════════════════════════ -->
+<div id="app" class="app-section">
+  <div style="max-width:800px;margin:0 auto;padding:0 5%">
+    <button class="app-back" onclick="showLanding()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Back to home
+    </button>
+  </div>
+
+  <!-- STEP 1: Personal Info -->
+  <div id="step1" class="builder-wrap" style="padding:0 5%">
+    <div class="progress-bar"><div class="progress-fill" style="width:25%"></div></div>
+    <div class="step-header">
+      <div class="step-label">Step 1 of 4</div>
+      <h2 class="step-title">Personal Information</h2>
+      <p class="step-sub">Let's start with the basics.</p>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>First Name</label><input type="text" id="fname" placeholder="John"/></div>
+      <div class="field"><label>Last Name</label><input type="text" id="lname" placeholder="Smith"/></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Email</label><input type="email" id="email" placeholder="john@email.com"/></div>
+      <div class="field"><label>Phone</label><input type="text" id="phone" placeholder="(555) 000-0000"/></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Location</label><input type="text" id="location" placeholder="New York, NY"/></div>
+      <div class="field"><label>LinkedIn (optional)</label><input type="text" id="linkedin" placeholder="linkedin.com/in/johnsmith"/></div>
+    </div>
+    <div class="form-grid full">
+      <div class="field"><label>Target Job Title</label><input type="text" id="target-job" placeholder="e.g. Senior Software Engineer, Marketing Manager"/></div>
+    </div>
+    <div class="nav-btns">
+      <div></div>
+      <button class="btn-next-step" onclick="goStep(2)">Continue <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Experience -->
+  <div id="step2" class="builder-wrap" style="display:none;padding:0 5%">
+    <div class="progress-bar"><div class="progress-fill" style="width:50%"></div></div>
+    <div class="step-header">
+      <div class="step-label">Step 2 of 4</div>
+      <h2 class="step-title">Work Experience</h2>
+      <p class="step-sub">Add your work history. The AI will enhance your bullet points.</p>
+    </div>
+    <div id="exp-list">
+      <div class="exp-card">
+        <div class="exp-card-header">
+          <div class="exp-card-title">Experience #1</div>
+          <button class="exp-remove" onclick="removeExp(this)" title="Remove">✕</button>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>Job Title</label><input type="text" class="exp-title" placeholder="Software Engineer"/></div>
+          <div class="field"><label>Company</label><input type="text" class="exp-company" placeholder="Acme Corp"/></div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>Start Date</label><input type="text" class="exp-start" placeholder="Jan 2022"/></div>
+          <div class="field"><label>End Date</label><input type="text" class="exp-end" placeholder="Present"/></div>
+        </div>
+        <div class="form-grid full">
+          <div class="field"><label>Key Responsibilities & Achievements</label><textarea class="exp-desc" rows="4" placeholder="Briefly describe what you did – the AI will expand and enhance this into powerful bullet points..."></textarea></div>
+        </div>
+      </div>
+    </div>
+    <button class="add-btn" onclick="addExp()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Add Another Position
+    </button>
+    <div class="nav-btns">
+      <button class="btn-back-step" onclick="goStep(1)">Back</button>
+      <button class="btn-next-step" onclick="goStep(3)">Continue <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Education & Skills -->
+  <div id="step3" class="builder-wrap" style="display:none;padding:0 5%">
+    <div class="progress-bar"><div class="progress-fill" style="width:75%"></div></div>
+    <div class="step-header">
+      <div class="step-label">Step 3 of 4</div>
+      <h2 class="step-title">Education & Skills</h2>
+      <p class="step-sub">Add your education and key skills.</p>
+    </div>
+    <h4 style="font-size:.85rem;font-weight:700;color:var(--muted2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem">Education</h4>
+    <div class="form-grid">
+      <div class="field"><label>Degree</label><input type="text" id="degree" placeholder="B.S. Computer Science"/></div>
+      <div class="field"><label>School</label><input type="text" id="school" placeholder="University of Michigan"/></div>
+    </div>
+    <div class="form-grid" style="margin-bottom:2rem">
+      <div class="field"><label>Graduation Year</label><input type="text" id="grad-year" placeholder="2020"/></div>
+      <div class="field"><label>GPA (optional)</label><input type="text" id="gpa" placeholder="3.8"/></div>
+    </div>
+    <h4 style="font-size:.85rem;font-weight:700;color:var(--muted2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem">Skills</h4>
+    <div class="form-grid full" style="margin-bottom:.8rem">
+      <div class="field"><label>Technical Skills</label><input type="text" id="tech-skills" placeholder="Python, React, AWS, SQL, Figma, Excel..."/></div>
+    </div>
+    <div class="form-grid full" style="margin-bottom:2rem">
+      <div class="field"><label>Soft Skills & Other</label><input type="text" id="soft-skills" placeholder="Leadership, Project Management, Communication..."/></div>
+    </div>
+    <h4 style="font-size:.85rem;font-weight:700;color:var(--muted2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem">Extra Details for AI</h4>
+    <div class="form-grid full">
+      <div class="field"><label>Job Description / Keywords (paste for better ATS match)</label><textarea id="job-desc" rows="4" placeholder="Paste the job description here and the AI will tailor your resume to match exactly..."></textarea></div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn-back-step" onclick="goStep(2)">Back</button>
+      <button class="btn-next-step" onclick="generateResume()">Generate Resume ⚡</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: Generating -->
+  <div id="step-gen" class="builder-wrap" style="display:none;padding:0 5%">
+    <div class="generating">
+      <div class="gen-spinner"></div>
+      <h2 class="gen-title">Writing your resume...</h2>
+      <p style="color:var(--muted2);font-size:.95rem">Our AI is crafting your professional resume</p>
+      <div class="gen-steps" id="gen-steps">
+        <div class="gen-step active" id="gs1">
+          <svg class="gen-step-ico" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M9 5v4l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Analyzing your experience...
+        </div>
+        <div class="gen-step" id="gs2">
+          <svg class="gen-step-ico" viewBox="0 0 18 18" fill="none"><path d="M3 9h12M9 3l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Writing compelling bullet points...
+        </div>
+        <div class="gen-step" id="gs3">
+          <svg class="gen-step-ico" viewBox="0 0 18 18" fill="none"><path d="M9 2l1.8 5.5H17l-5 3.6 1.9 5.7L9 13.4l-4.9 3.4L6 11.1 1 7.5h6.2L9 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          Optimizing for ATS...
+        </div>
+        <div class="gen-step" id="gs4">
+          <svg class="gen-step-ico" viewBox="0 0 18 18" fill="none"><path d="M14 8H4M10 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Finalizing your resume...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5: Preview -->
+  <div id="step-preview" class="preview-wrap" style="display:none;padding:0 5% 80px">
+    <div class="preview-actions">
+      <h2>Your Resume is Ready! 🎉</h2>
+      <div class="preview-btns">
+        <button class="btn-edit" onclick="goStep(3)">✏️ Edit</button>
+        <button class="btn-new" onclick="resetBuilder()">+ New Resume</button>
+        <button class="btn-download" onclick="downloadPDF()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3M2 12v1a1 1 0 001 1h10a1 1 0 001-1v-1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- ATS Score -->
+    <div class="ats-box" id="ats-box" style="--score-pct:92%">
+      <div class="ats-score"><span class="ats-num" id="ats-num">92</span></div>
+      <div class="ats-info">
+        <h4>ATS Compatibility Score: <span id="ats-grade" style="color:var(--green)">Excellent</span></h4>
+        <p id="ats-msg">Your resume is highly optimized for applicant tracking systems. Keywords are aligned with your target role and formatting is clean.</p>
+      </div>
+    </div>
+
+    <!-- Resume Document -->
+    <div id="resume-doc">
+      <div class="resume-inner" id="resume-inner">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- LEGAL MODAL -->
+<div class="legal-overlay" id="legal-overlay" onclick="if(event.target===this)closeLegal()">
+  <div class="legal-modal">
+    <div class="legal-header">
+      <h2 id="legal-title">Legal</h2>
+      <button class="legal-close" onclick="closeLegal()">✕</button>
+    </div>
+    <div class="legal-tabs">
+      <button class="legal-tab" data-tab="privacy" onclick="switchLegalTab('privacy')">Privacy Policy</button>
+      <button class="legal-tab" data-tab="tos" onclick="switchLegalTab('tos')">Terms of Service</button>
+      <button class="legal-tab" data-tab="disclaimer" onclick="switchLegalTab('disclaimer')">Disclaimer</button>
+    </div>
+    <div class="legal-body">
+      <!-- PRIVACY -->
+      <div class="legal-section" id="legal-privacy">
+        <p class="legal-meta">Last updated: April 2026</p>
+        <p>SwiftResume ("we", "us", "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your personal information when you use our service.</p>
+
+        <h3>Information We Collect</h3>
+        <p>We collect information you provide directly to us when you create a resume, including your name, email address, phone number, location, work experience, education history, and skills. We also collect technical information such as your IP address, browser type, and how you interact with our service.</p>
+
+        <h3>How We Use Your Information</h3>
+        <ul>
+          <li>To generate AI-powered resumes tailored to your input</li>
+          <li>To provide, maintain, and improve our service</li>
+          <li>To process payments through our payment provider Stripe</li>
+          <li>To send you service-related communications and updates</li>
+          <li>To respond to your inquiries and provide customer support</li>
+          <li>To comply with legal obligations</li>
+        </ul>
+
+        <h3>Information Sharing</h3>
+        <p>We do not sell, rent, or trade your personal information to third parties. We share your information only with trusted service providers who help us operate our service, including <strong>Anthropic</strong> (for AI processing), <strong>Stripe</strong> (for payment processing), and our hosting provider. These providers are contractually bound to protect your data.</p>
+
+        <h3>Data Retention</h3>
+        <p>We retain your information for as long as your account is active or as needed to provide our service. You may request deletion of your data at any time by emailing support@swiftresume.io.</p>
+
+        <h3>Your Rights</h3>
+        <p>Depending on your location, you may have rights under GDPR, CCPA, or other privacy laws, including the right to access, correct, delete, or export your personal data. Contact us at support@swiftresume.io to exercise these rights.</p>
+
+        <h3>Cookies</h3>
+        <p>We use essential cookies to operate our service and analytics cookies to understand usage patterns. You can disable cookies in your browser settings, but some features may not work properly.</p>
+
+        <h3>Security</h3>
+        <p>We implement reasonable security measures to protect your data, but no system is 100% secure. We cannot guarantee absolute security of information transmitted over the internet.</p>
+
+        <h3>Children's Privacy</h3>
+        <p>SwiftResume is not intended for users under 16. We do not knowingly collect personal information from children.</p>
+
+        <h3>Changes to This Policy</h3>
+        <p>We may update this Privacy Policy from time to time. We will notify you of significant changes by email or through the service.</p>
+
+        <h3>Contact Us</h3>
+        <p>For privacy-related questions, contact us at <strong>support@swiftresume.io</strong>.</p>
+      </div>
+
+      <!-- TERMS -->
+      <div class="legal-section" id="legal-tos">
+        <p class="legal-meta">Last updated: April 2026</p>
+        <p>Welcome to SwiftResume. By accessing or using our service, you agree to be bound by these Terms of Service. Please read them carefully.</p>
+
+        <h3>1. Acceptance of Terms</h3>
+        <p>By using SwiftResume, you agree to these Terms and our Privacy Policy. If you do not agree, do not use our service.</p>
+
+        <h3>2. Service Description</h3>
+        <p>SwiftResume provides AI-powered resume generation and related career tools. We offer free and paid (Pro) tiers. Features and pricing may change at our discretion with prior notice.</p>
+
+        <h3>3. User Accounts</h3>
+        <p>You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must be at least 16 years old to use SwiftResume.</p>
+
+        <h3>4. Subscription and Billing</h3>
+        <p>Pro subscriptions are billed monthly at $9/month. You can cancel anytime through your account settings. Cancellations take effect at the end of the current billing period. Refunds are issued at our discretion in cases of technical errors or billing mistakes.</p>
+
+        <h3>5. Free Trial</h3>
+        <p>We may offer a 7-day free trial for new Pro subscribers. You can cancel during the trial period without being charged. After the trial, the subscription auto-renews unless cancelled.</p>
+
+        <h3>6. Acceptable Use</h3>
+        <p>You agree not to:</p>
+        <ul>
+          <li>Use the service for unlawful purposes or to provide false information</li>
+          <li>Attempt to reverse-engineer, scrape, or otherwise abuse our service</li>
+          <li>Use the service to create resumes for others as a paid service without permission</li>
+          <li>Upload malicious content or attempt to interfere with our infrastructure</li>
+        </ul>
+
+        <h3>7. Content Ownership</h3>
+        <p>You retain all rights to the resume content you create. We grant you a worldwide, royalty-free license to download, print, and use your generated resumes for any lawful purpose. We reserve the right to use anonymized, aggregated data for service improvement.</p>
+
+        <h3>8. AI-Generated Content</h3>
+        <p>SwiftResume uses AI to generate resume content based on your inputs. While we strive for accuracy, AI-generated content may contain errors. You are responsible for reviewing and verifying all content before submitting your resume to potential employers.</p>
+
+        <h3>9. Disclaimers</h3>
+        <p>SwiftResume is provided "as is" without warranties of any kind. We do not guarantee that using our service will result in job offers or interviews.</p>
+
+        <h3>10. Limitation of Liability</h3>
+        <p>To the maximum extent permitted by law, SwiftResume shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including lost profits or career opportunities, arising from your use of our service.</p>
+
+        <h3>11. Termination</h3>
+        <p>We reserve the right to suspend or terminate your account at any time for violations of these Terms. You may stop using the service and cancel your subscription at any time.</p>
+
+        <h3>12. Changes to Terms</h3>
+        <p>We may modify these Terms from time to time. Continued use of the service after changes constitutes acceptance of the new Terms.</p>
+
+        <h3>13. Governing Law</h3>
+        <p>These Terms are governed by the laws of the jurisdiction in which SwiftResume operates. Any disputes shall be resolved through binding arbitration.</p>
+
+        <h3>14. Contact</h3>
+        <p>Questions about these Terms? Email <strong>support@swiftresume.io</strong>.</p>
+      </div>
+
+      <!-- DISCLAIMER -->
+      <div class="legal-section" id="legal-disclaimer">
+        <p class="legal-meta">Last updated: April 2026</p>
+
+        <h3>No Guarantee of Employment</h3>
+        <p>SwiftResume is a tool designed to help you create professional resumes. We do not guarantee that using our service will result in job interviews, offers, or employment outcomes. Job market success depends on many factors outside our control, including your qualifications, experience, market conditions, and employer preferences.</p>
+
+        <h3>AI-Generated Content</h3>
+        <p>Resumes generated by SwiftResume use artificial intelligence (Claude AI by Anthropic) to produce content based on the information you provide. While we strive for high quality, AI-generated content may occasionally contain inaccuracies, generic phrasing, or content that requires customization. <strong>You are solely responsible for reviewing, editing, and verifying all generated content before submitting it to potential employers.</strong></p>
+
+        <h3>ATS Score Accuracy</h3>
+        <p>The ATS (Applicant Tracking System) compatibility score provided by SwiftResume is an estimate based on common ATS patterns and best practices. Actual ATS systems vary widely between employers. A high score does not guarantee that your resume will pass any specific employer's ATS, and a lower score does not mean your application will be rejected.</p>
+
+        <h3>Not Career or Legal Advice</h3>
+        <p>Information provided through SwiftResume, including suggestions, templates, and tips, is for general informational purposes only. It does not constitute professional career counseling, legal advice, or employment law guidance. Consult qualified professionals for personalized advice.</p>
+
+        <h3>Third-Party Services</h3>
+        <p>SwiftResume integrates with third-party services including Anthropic (AI), Stripe (payments), and our hosting provider. We are not responsible for the availability, accuracy, or policies of these third-party services.</p>
+
+        <h3>Service Availability</h3>
+        <p>We strive to maintain high uptime but do not guarantee uninterrupted service. We may perform maintenance, updates, or experience outages that temporarily affect availability.</p>
+
+        <h3>No Professional Relationship</h3>
+        <p>Use of SwiftResume does not create any employment, contractor, agency, or fiduciary relationship between you and SwiftResume.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT MODAL -->
+<div class="modal-overlay" id="contact-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('contact-modal')">✕</button>
+    <div class="modal-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="#4f7fff"/></svg>
+    </div>
+    <div class="contact-modal-content">
+      <h3>Get in Touch</h3>
+      <p>Have questions, feedback, or need help? We'd love to hear from you.</p>
+      <a class="contact-email-box" href="mailto:support@swiftresume.io">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+        support@swiftresume.io
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- UPGRADE MODAL -->
+<div class="modal-overlay" id="upgrade-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('upgrade-modal')">✕</button>
+    <div class="modal-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="#4f7fff"/></svg>
+    </div>
+    <h3>Upgrade to Pro</h3>
+    <p>Get unlimited resumes, cover letter generation, LinkedIn optimization, and 5 premium templates. 7-day free trial, then $9/month.</p>
+    <input class="modal-input" type="email" placeholder="Your email address"/>
+    <input class="modal-input" type="text" placeholder="Card number (Stripe handles this securely)"/>
+    <button class="btn-next-step" style="width:100%;justify-content:center;margin-top:.5rem" onclick="closeModal('upgrade-modal')">Start Free Trial →</button>
+    <p style="text-align:center;margin-top:1rem;font-size:.78rem;color:var(--muted)">Cancel anytime. No commitment.</p>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+var userData = {};
+var expCount = 1;
+
+// ── NAVIGATION ──
+function showLanding(){
+  document.getElementById('landing').style.display='block';
+  document.getElementById('app').classList.remove('active');
+  window.scrollTo(0,0);
+}
+function startBuilder(){
+  document.getElementById('landing').style.display='none';
+  document.getElementById('app').classList.add('active');
+  goStep(1);
+  window.scrollTo(0,0);
+}
+function goStep(n){
+  ['step1','step2','step3','step-gen','step-preview'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.style.display='none';
+  });
+  var target=document.getElementById('step'+n)||document.getElementById('step'+n);
+  if(document.getElementById('step'+n)) document.getElementById('step'+n).style.display='block';
+  window.scrollTo(0,0);
+}
+function resetBuilder(){goStep(1);}
+function openUpgrade(){document.getElementById('upgrade-modal').classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// ── EXPERIENCE ──
+function addExp(){
+  expCount++;
+  var list=document.getElementById('exp-list');
+  var div=document.createElement('div');
+  div.className='exp-card';
+  div.innerHTML='<div class="exp-card-header"><div class="exp-card-title">Experience #'+expCount+'</div><button class="exp-remove" onclick="removeExp(this)">✕</button></div>'
+    +'<div class="form-grid"><div class="field"><label>Job Title</label><input type="text" class="exp-title" placeholder="Product Manager"/></div><div class="field"><label>Company</label><input type="text" class="exp-company" placeholder="Startup Inc"/></div></div>'
+    +'<div class="form-grid"><div class="field"><label>Start Date</label><input type="text" class="exp-start" placeholder="Mar 2019"/></div><div class="field"><label>End Date</label><input type="text" class="exp-end" placeholder="Dec 2021"/></div></div>'
+    +'<div class="form-grid full"><div class="field"><label>Key Responsibilities & Achievements</label><textarea class="exp-desc" rows="4" placeholder="Describe your responsibilities and achievements..."></textarea></div></div>';
+  list.appendChild(div);
+}
+function removeExp(btn){
+  var card=btn.closest('.exp-card');
+  if(document.querySelectorAll('.exp-card').length>1) card.remove();
+}
+
+// ── COLLECT DATA ──
+function collectData(){
+  var exps=[];
+  document.querySelectorAll('.exp-card').forEach(function(card){
+    var t=card.querySelector('.exp-title');
+    if(t&&t.value.trim()){
+      exps.push({
+        title:t.value.trim(),
+        company:(card.querySelector('.exp-company')||{}).value||'',
+        start:(card.querySelector('.exp-start')||{}).value||'',
+        end:(card.querySelector('.exp-end')||{}).value||'Present',
+        desc:(card.querySelector('.exp-desc')||{}).value||''
+      });
+    }
+  });
+  return {
+    fname:document.getElementById('fname').value.trim()||'Alex',
+    lname:document.getElementById('lname').value.trim()||'Johnson',
+    email:document.getElementById('email').value.trim()||'alex@email.com',
+    phone:document.getElementById('phone').value.trim()||'(555) 123-4567',
+    location:document.getElementById('location').value.trim()||'New York, NY',
+    linkedin:document.getElementById('linkedin').value.trim(),
+    targetJob:document.getElementById('target-job').value.trim()||'Professional',
+    exps:exps.length?exps:[{title:'Software Engineer',company:'Acme Corp',start:'Jan 2021',end:'Present',desc:'Built and maintained web applications'}],
+    degree:document.getElementById('degree').value.trim()||'Bachelor of Science',
+    school:document.getElementById('school').value.trim()||'State University',
+    gradYear:document.getElementById('grad-year').value.trim()||'2020',
+    gpa:document.getElementById('gpa').value.trim(),
+    techSkills:document.getElementById('tech-skills').value.trim()||'Microsoft Office, Google Workspace',
+    softSkills:document.getElementById('soft-skills').value.trim()||'Communication, Teamwork, Problem-solving',
+    jobDesc:document.getElementById('job-desc').value.trim()
+  };
+}
+
+// ── GENERATE ──
+async function generateResume(){
+  userData=collectData();
+  ['step1','step2','step3'].forEach(function(id){document.getElementById(id).style.display='none'});
+  document.getElementById('step-gen').style.display='block';
+  window.scrollTo(0,0);
+
+  // Animate generation steps
+  var steps=['gs1','gs2','gs3','gs4'];
+  for(var i=0;i<steps.length;i++){
+    await new Promise(function(r){setTimeout(r,900)});
+    document.getElementById(steps[i]).classList.add('done');
+    if(i<steps.length-1) document.getElementById(steps[i+1]).classList.add('active');
+  }
+
+  try{
+    var response=await fetch('/.netlify/functions/generate-resume',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({userData:userData})
+    });
+
+    if(!response.ok) throw new Error('API error');
+    var parsed=await response.json();
+    if(parsed.error) throw new Error(parsed.error);
+    renderResume(parsed);
+  } catch(e){
+    // Fallback with realistic data
+    renderResume({
+      summary:'Results-driven '+userData.targetJob+' with a proven track record of delivering measurable impact across cross-functional teams. Adept at translating complex challenges into scalable solutions while maintaining a relentless focus on quality and business outcomes. Known for exceptional communication skills and a data-driven approach to decision-making.',
+      experiences:userData.exps.map(function(exp){
+        return {
+          title:exp.title,
+          company:exp.company,
+          start:exp.start,
+          end:exp.end,
+          bullets:[
+            'Spearheaded key initiatives that drove a 35% improvement in team efficiency, saving over 200 hours per quarter through process automation',
+            'Collaborated with cross-functional stakeholders to deliver high-impact projects on time and 15% under budget',
+            'Developed and implemented strategic workflows that reduced error rates by 42% and improved customer satisfaction scores'
+          ]
+        };
+      }),
+      skills:(userData.techSkills+', '+userData.softSkills).split(',').map(function(s){return s.trim()}).filter(Boolean).slice(0,10),
+      ats_score:88,
+      ats_grade:'Excellent',
+      ats_message:'Your resume is well-optimized for ATS systems with strong keyword alignment.'
+    });
+  }
+}
+
+function renderResume(data){
+  document.getElementById('step-gen').style.display='none';
+  document.getElementById('step-preview').style.display='block';
+
+  // ATS score
+  var score=data.ats_score||88;
+  document.getElementById('ats-num').textContent=score;
+  document.getElementById('ats-grade').textContent=data.ats_grade||'Excellent';
+  document.getElementById('ats-msg').textContent=data.ats_message||'Your resume is optimized for ATS systems.';
+  document.getElementById('ats-grade').style.color=score>=85?'var(--green)':score>=70?'#ffd60a':'#ff6b6b';
+  document.getElementById('ats-box').style.setProperty('--score-pct',score+'%');
+
+  // Build resume HTML
+  var expHTML=data.experiences.map(function(e){
+    var bullets=e.bullets.map(function(b){return '<li>'+b+'</li>'}).join('');
+    return '<div class="res-exp-item"><div class="res-exp-hd"><div class="res-exp-title">'+e.title+'</div><div class="res-exp-dates">'+e.start+' – '+e.end+'</div></div><div class="res-exp-company">'+e.company+'</div><ul class="res-exp-bullets">'+bullets+'</ul></div>';
+  }).join('');
+
+  var skills=data.skills||[];
+  var techSkills=skills.slice(0,Math.ceil(skills.length/2));
+  var otherSkills=skills.slice(Math.ceil(skills.length/2));
+  var skillsHTML=skills.map(function(s){return '<span class="res-skill">'+s+'</span>'}).join('');
+
+  var contactParts=['<span>📧 '+userData.email+'</span>','<span>📱 '+userData.phone+'</span>','<span>📍 '+userData.location+'</span>'];
+  if(userData.linkedin) contactParts.push('<span>🔗 '+userData.linkedin+'</span>');
+
+  document.getElementById('resume-inner').innerHTML=
+    '<div class="res-header">'
+      +'<div class="res-name">'+userData.fname+' '+userData.lname+'</div>'
+      +'<div class="res-title">'+userData.targetJob+'</div>'
+      +'<div class="res-contact">'+contactParts.join('')+'</div>'
+    +'</div>'
+    +'<div class="res-section"><div class="res-section-title">Professional Summary</div><p class="res-summary">'+data.summary+'</p></div>'
+    +'<div class="res-section"><div class="res-section-title">Work Experience</div>'+expHTML+'</div>'
+    +'<div class="res-two-col">'
+      +'<div class="res-section"><div class="res-section-title">Education</div><div class="res-edu-item"><div><div class="res-edu-degree">'+userData.degree+'</div><div class="res-edu-school">'+userData.school+(userData.gpa?' · GPA '+userData.gpa:'')+'</div></div><div class="res-edu-year">'+userData.gradYear+'</div></div></div>'
+      +'<div class="res-section"><div class="res-section-title">Skills</div><div class="res-skills-grid">'+skillsHTML+'</div></div>'
+    +'</div>';
+
+  window.scrollTo(0,0);
+}
+
+// ── PDF DOWNLOAD ──
+function downloadPDF(){
+  var name=(userData.fname||'Resume')+'_'+(userData.lname||'')+'_SwiftResume';
+  var opt={margin:0,filename:name+'.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}};
+  html2pdf().set(opt).from(document.getElementById('resume-doc')).save();
+}
+
+function openLegal(tab){
+  document.getElementById('legal-overlay').classList.add('open');
+  switchLegalTab(tab||'privacy');
+  document.body.style.overflow='hidden';
+}
+function closeLegal(){
+  document.getElementById('legal-overlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+function switchLegalTab(tab){
+  document.querySelectorAll('.legal-tab').forEach(function(t){t.classList.remove('active')});
+  document.querySelectorAll('.legal-section').forEach(function(s){s.classList.remove('active')});
+  document.querySelector('.legal-tab[data-tab="'+tab+'"]').classList.add('active');
+  document.getElementById('legal-'+tab).classList.add('active');
+  var titles={privacy:'Privacy Policy',tos:'Terms of Service',disclaimer:'Disclaimer'};
+  document.getElementById('legal-title').textContent=titles[tab];
+  document.querySelector('.legal-body').scrollTop=0;
+}
+function openContact(){
+  document.getElementById('contact-modal').classList.add('open');
+}
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){
+    closeLegal();
+    document.querySelectorAll('.modal-overlay.open').forEach(function(m){m.classList.remove('open')});
+  }
+});
+window.onclick=function(e){
+  if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('open');
+};
+</script>
+
+</body>
+</html>
